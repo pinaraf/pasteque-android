@@ -28,6 +28,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.RelativeLayout;
+import java.text.DecimalFormat;
 
 public class TicketLineItem extends RelativeLayout {
 
@@ -88,7 +89,13 @@ public class TicketLineItem extends RelativeLayout {
     public void reuse(TicketLine line) {
         this.line = line;
         this.label.setText(this.line.getProduct().getLabel());
-        this.quantity.setText(String.valueOf(this.line.getQuantity()));
+        DecimalFormat f;
+        if (this.line.getProduct().isScaled()) {
+            f = new DecimalFormat("#0.00");
+        } else {
+            f = new DecimalFormat("#0");
+        }
+        this.quantity.setText(f.format(this.line.getQuantity()));
     }
 
     public void setEditListener(TicketLineEditListener l) {
