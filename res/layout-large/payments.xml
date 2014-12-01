@@ -270,7 +270,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           android:layout_height="wrap_content"
           android:layout_marginLeft="@dimen/contentMargin"
           android:onClick="back"
-          android:background="#ff6600"
+          android:background="#ffffff"
           android:padding="10dp"
           android:src="@drawable/cart_back" />
       <TextView android:id="@+id/ticket_total"
@@ -280,7 +280,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 android:layout_margin="@dimen/contentMargin"
                 android:gravity="right|center_vertical"
                 android:textSize="@dimen/ticket_subtitle"
-          android:textColor="#0070c0"
+          android:textColor="@color/bleu"
           android:textStyle="bold"/>
 
     </LinearLayout>

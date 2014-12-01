@@ -187,7 +187,7 @@
                 android:layout_margin="@dimen/contentMargin"
                 android:gravity="right|center_vertical"
                 android:textSize="@dimen/ticket_subtitle"
-                android:textColor="#0070c0"
+                android:textColor="@color/bleu"
                 android:textStyle="bold" />
       <ImageButton
           android:id="@+id/pay"

@@ -25,21 +25,21 @@
   <color name="textBtnBackground">#AAFFFFFF</color>
   <color name="backgroundStart">#FFFFFF</color>
   <color name="backgroundEnd">#a9a9a9</color>
-  <color name="btnUsrStartBg">#0067a1</color>
+  <color name="btnUsrStartBg">#ff028854</color>
   <color name="btnUsrStartBgClicked">#397194</color>
   <color name="btnUsrStartText">#FFFFFF</color>
-  <color name="titleTicketBackground">#0067a1</color>
+  <color name="titleTicketBackground">#ff028854</color>
   <color name="titleTicketcolor">#FFFFFF</color>
   <color name="transparence">#00000000</color>
   <color name="btnImpBg">#ff641a</color>
   <color name="btnImpBgClicked">#d95516</color>
-  <color name="btnInputBg">#397194</color>
+  <color name="btnInputBg">#ff028854</color>
   <color name="btnInputBgClicked">#104d6c</color>
-  <color name="btnInputBorder">#64acd4</color>
+  <color name="btnInputBorder">#ff028854</color>
   <color name="soft">#a2a2a2</color>
   <color name="grey">#c9c9c9</color>
   <color name="hardgrey">#858688</color>
-  <color name="bleu">#0070c0</color>
+  <color name="bleu">#ff028854</color>
     
   <dimen name="ticket_title">18dip</dimen>
   <dimen name="iconeProduct">30dip</dimen>
@@ -116,7 +116,7 @@
   </style>
 
   <style name="numButton">
-    <item name="android:background">#34b5e9</item>
+    <item name="android:background">#ff028854</item>
     <item name="android:textSize">22dip</item>
     <item name="android:textColor">#ffffff</item>
   </style>
