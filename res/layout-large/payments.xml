@@ -270,7 +270,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           android:layout_height="wrap_content"
           android:layout_marginLeft="@dimen/contentMargin"
           android:onClick="back"
-          android:background="#ffffff"
+          android:background="@color/bleu"
           android:padding="10dp"
           android:src="@drawable/cart_back" />
       <TextView android:id="@+id/ticket_total"

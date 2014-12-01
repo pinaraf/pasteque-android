@@ -128,7 +128,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           android:layout_marginLeft="10dp"
           android:onClick="back"
           android:src="@drawable/cart_back"
-          android:background="#ffffff"
+          android:background="@color/bleu"
           android:padding="10dp"/>
       <TextView android:id="@+id/ticket_total"
                 android:layout_width="fill_parent"
