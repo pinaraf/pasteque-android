@@ -3,16 +3,32 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="@string/menu_add_customer"
-        android:id="@+id/textView"
-        android:layout_marginTop="@dimen/formClient"
-        android:textSize="@dimen/ticket_title"
-        android:layout_gravity="center"
-        android:textStyle="bold"/>
+    <RelativeLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal">
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:text="@string/menu_add_customer"
+                android:id="@+id/textView"
+                android:layout_marginTop="@dimen/formClient"
+                android:textSize="@dimen/ticket_title"
+                android:layout_gravity="center_horizontal"
+                android:layout_centerHorizontal="true"
+                android:textStyle="bold"
+                />
+        <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/worldline_small"
+                android:layout_gravity="center_vertical"
+                android:layout_marginRight="@dimen/bigBtnWidth"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                />
+    </RelativeLayout>
     <LinearLayout
         android:layout_width="600dp"
         android:layout_height="wrap_content"

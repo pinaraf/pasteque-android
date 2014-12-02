@@ -61,7 +61,9 @@
       android:layout_height="fill_parent"
       android:orientation="vertical"
       android:layout_marginTop="15dp"
-      android:layout_weight="1">
+      android:layout_weight="1"
+      android:background="@color/titleTicketcolor"
+          >
 
         <Gallery android:id="@+id/categoriesGrid"
                  android:layout_width="fill_parent"
@@ -87,6 +89,13 @@
               android:verticalSpacing="@dimen/btnSpacing"
                android:background="@color/titleTicketcolor"
         />
+      <ImageView
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:src="@drawable/worldline_small"
+              android:gravity="left|bottom"
+              />
+
   </LinearLayout>
 
   <!-- Right part: ticket -->

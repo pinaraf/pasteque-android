@@ -144,13 +144,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   android:visibility="visible"/>
           </LinearLayout>
 
+
       </LinearLayout>
+
+
 
       <RelativeLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:background="@color/titleTicketcolor"
         >
+          <ImageView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:src="@drawable/worldline_small"
+                  android:gravity="bottom|left"
+                  android:layout_marginTop="@dimen/smallBtnHeight"
+                  />
       <TextView
           android:id="@+id/ticket_remaining"
           android:layout_width="wrap_content"

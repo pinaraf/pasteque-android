@@ -190,6 +190,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             android:layout_gravity="center"
             android:layout_marginBottom="@dimen/title_topmargin"
             android:layout_marginTop="@dimen/contentMargin" />
+
           <LinearLayout
               android:id="@+id/caracteristicUser"
               android:layout_width="fill_parent"
@@ -254,6 +255,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </LinearLayout>
 
           </LinearLayout>
+
+
       </LinearLayout>
       <!-- Payment list -->
       <ListView
@@ -269,6 +272,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         android:layout_height="wrap_content"
         android:background="@color/titleTicketcolor"
         >
+        <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/worldline_small"
+                android:gravity="left|bottom"
+                />
       <TextView
           android:id="@+id/ticket_remaining"
           android:layout_width="wrap_content"
