@@ -58,6 +58,7 @@
     <string name="payment_no_enough_prepaid">The customer prepayment isn\'t enough</string>
     <string name="payment_card_rejected">Credit card rejected.</string>
     <string name="payment_done">Payment done</string>
+    <string name="product_price">%.2f€</string>
     <string name="confirm_payment_end">Close payment?</string>
     <string name="prd_info_price">Price: %.2f€</string>
     <string name="customer_none">None</string>
