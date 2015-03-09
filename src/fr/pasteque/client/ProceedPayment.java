@@ -286,8 +286,8 @@ public class ProceedPayment extends TrackedActivity
         PaylevenApi.configure("edaffb929bd34aa78122b2d15a36a5c7");
         // Init Wordline TPE
         PaymentManager pm = PaymentManager.getInstance();
-        YomaniNetworkTerminalMethod yomani = new YomaniNetworkTerminalMethod("192.168.2.2", 3333, ResponseIndicatorField.NO_FIELD, PaymentMethod.INDIFFERENT, null, Delay.END_OF_TRANSACTION_RESPONSE, AuthorizationCall.TPE_DECISION);
-        XengoTerminalMethod xengo = new XengoTerminalMethod(this,
+        YomaniNetworkTerminalMethod yomani = new YomaniNetworkTerminalMethod(1, "192.168.1.150", 3333, ResponseIndicatorField.NO_FIELD, PaymentMethod.INDIFFERENT, null, Delay.END_OF_TRANSACTION_RESPONSE, AuthorizationCall.TPE_DECISION);
+        XengoTerminalMethod xengo = new XengoTerminalMethod(2, this,
                 "https://macceptance.sygea.com/tpm/tpm-shop-service/",
                 "demo_a554314", "20017884", "motdepasse", "", "", "");
         try {
