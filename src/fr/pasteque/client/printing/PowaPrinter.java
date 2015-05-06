@@ -35,11 +35,13 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
-import com.mpowa.android.powapos.peripherals.*;
-import com.mpowa.android.powapos.peripherals.platform.base.*;
-import com.mpowa.android.powapos.peripherals.drivers.s10.PowaS10Scanner;
-import com.mpowa.android.powapos.peripherals.drivers.tseries.PowaTSeries;
-import com.mpowa.android.powapos.common.dataobjects.*;
+import com.mpowa.android.sdk.powapos.*;
+import com.mpowa.android.sdk.powapos.core.*;
+import com.mpowa.android.sdk.powapos.core.abstracts.*;
+import com.mpowa.android.sdk.powapos.core.callbacks.*;
+import com.mpowa.android.sdk.powapos.core.dataobjects.*;
+import com.mpowa.android.sdk.powapos.drivers.s10.*;
+import com.mpowa.android.sdk.powapos.drivers.tseries.*;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -113,7 +115,7 @@ public class PowaPrinter extends PrinterHelper {
     protected void cut() {
     }
 
-    private class PowaCallback extends PowaPeripheralCallback {
+    private class PowaCallback extends PowaPOSCallback {
         public void onCashDrawerStatus(PowaPOSEnums.CashDrawerStatus status) {}
         public void onScannerInitialized(final PowaPOSEnums.InitializedResult result) {}
         public void onScannerRead(final String data) {}
@@ -121,6 +123,8 @@ public class PowaPrinter extends PrinterHelper {
         public void onUSBDeviceDetached(final PowaPOSEnums.PowaUSBCOMPort port) {}
         public void onUSBReceivedData(PowaPOSEnums.PowaUSBCOMPort port,
                 final byte[] data) {}
+        public void onPrinterOutOfPaper() {}
+        public void onPrintJobResult(PowaPOSEnums.PrintJobResult result) {}
         public void onPrintJobCompleted(PowaPOSEnums.PrintJobResult result) { 
             PowaPrinter.this.powa.openCashDrawer();
             if (PowaPrinter.this.callback != null) {
@@ -131,6 +135,7 @@ public class PowaPrinter extends PrinterHelper {
         }
         @Override
         public void onRotationSensorStatus(PowaPOSEnums.RotationSensorStatus status) {}
+        public void onMCUConnectionStateChanged(PowaPOSEnums.ConnectionState newState) {}
         public void onMCUSystemConfiguration(Map<String, String> config) {}
         @Override
         public void onMCUBootloaderUpdateFailed(final PowaPOSEnums.BootloaderUpdateError error) {}

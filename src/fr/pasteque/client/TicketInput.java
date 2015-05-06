@@ -91,11 +91,12 @@ import fr.pasteque.client.widgets.SessionTicketsAdapter;
 import fr.pasteque.client.widgets.TicketLineItem;
 import fr.pasteque.client.widgets.TicketLinesAdapter;
 
-import com.mpowa.android.powapos.peripherals.*;
-import com.mpowa.android.powapos.peripherals.platform.base.*;
-import com.mpowa.android.powapos.peripherals.drivers.s10.PowaS10Scanner;
-import com.mpowa.android.powapos.peripherals.drivers.tseries.PowaTSeries;
-import com.mpowa.android.powapos.common.dataobjects.*;
+import com.mpowa.android.sdk.powapos.*;
+import com.mpowa.android.sdk.powapos.core.*;
+import com.mpowa.android.sdk.powapos.core.abstracts.*;
+import com.mpowa.android.sdk.powapos.core.callbacks.*;
+import com.mpowa.android.sdk.powapos.drivers.s10.*;
+import com.mpowa.android.sdk.powapos.drivers.tseries.*;
 
 public class TicketInput extends TrackedActivity
     implements TicketLineEditListener, AdapterView.OnItemSelectedListener,
@@ -774,7 +775,7 @@ public class TicketInput extends TrackedActivity
     public boolean onSingleTapUp(MotionEvent e) { return false;}
 
 
-    private class PowaCallback extends PowaPeripheralCallback {
+    private class PowaCallback extends PowaPOSCallback {
         public void onCashDrawerStatus(PowaPOSEnums.CashDrawerStatus status) {}
         public void onScannerInitialized(final PowaPOSEnums.InitializedResult result) {}
         public void onScannerRead(final String data) {
@@ -790,6 +791,8 @@ public class TicketInput extends TrackedActivity
         public void onUSBReceivedData(PowaPOSEnums.PowaUSBCOMPort port,
                 final byte[] data) {}
         public void onPrintJobCompleted(PowaPOSEnums.PrintJobResult result) {}
+        public void onPrintJobResult(PowaPOSEnums.PrintJobResult result) {}
+        public void onPrinterOutOfPaper() {}
         @Override
         public void onRotationSensorStatus(PowaPOSEnums.RotationSensorStatus status) {
             if (status == PowaPOSEnums.RotationSensorStatus.ROTATED) {
@@ -807,6 +810,7 @@ public class TicketInput extends TrackedActivity
                 });
             }
         }
+        public void onMCUConnectionStateChanged(PowaPOSEnums.ConnectionState newState) {}
         public void onMCUSystemConfiguration(Map<String, String> config) {}
         @Override
         public void onMCUBootloaderUpdateFailed(final PowaPOSEnums.BootloaderUpdateError error) {}
