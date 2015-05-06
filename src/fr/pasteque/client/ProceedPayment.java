@@ -282,26 +282,39 @@ public class ProceedPayment extends TrackedActivity
             // Set null to cancel printing
             this.printer = null;
         }
-        // Init Payleven API
-        PaylevenApi.configure("edaffb929bd34aa78122b2d15a36a5c7");
-        // Init Wordline TPE
-        PaymentManager pm = PaymentManager.getInstance();
-        YomaniNetworkTerminalMethod yomani = new YomaniNetworkTerminalMethod("192.168.2.2", 3333, ResponseIndicatorField.NO_FIELD, PaymentMethod.INDIFFERENT, null, Delay.END_OF_TRANSACTION_RESPONSE, AuthorizationCall.TPE_DECISION);
-        XengoTerminalMethod xengo = new XengoTerminalMethod(this,
-                "https://macceptance.sygea.com/tpm/tpm-shop-service/",
-                "demo_a554314", "20017884", "motdepasse", "", "", "");
-        try {
-            pm.addTerminalMethod(yomani);
-            pm.addTerminalMethod(xengo);
-        } catch (IncompatibleTerminalMethodException e) {
-            e.printStackTrace();
-        }
         // Update UI based upon settings
+        // For payleven first
         View paylevenBtn = this.findViewById(R.id.btnPayleven);
         if (Configure.getPayleven(this)) {
+            PaylevenApi.configure("edaffb929bd34aa78122b2d15a36a5c7");
             paylevenBtn.setVisibility(View.VISIBLE);
         } else {
             paylevenBtn.setVisibility(View.INVISIBLE);
+        }
+        // Init Wordline TPE
+        PaymentManager pm = PaymentManager.getInstance();
+        if (Configure.getWorldline(this)) {
+            YomaniNetworkTerminalMethod yomani = new YomaniNetworkTerminalMethod(
+                    Configure.getWorldlineAddress(this), 3333, ResponseIndicatorField.NO_FIELD,
+                    PaymentMethod.INDIFFERENT, null, Delay.END_OF_TRANSACTION_RESPONSE,
+                    AuthorizationCall.TPE_DECISION);
+            try {
+                pm.addTerminalMethod(yomani);
+            } catch (IncompatibleTerminalMethodException e) {
+                e.printStackTrace();
+            }
+
+        }
+        if (Configure.getXengo(this)) {
+            XengoTerminalMethod xengo = new XengoTerminalMethod(this,
+                    "https://macceptance.sygea.com/tpm/tpm-shop-service/",
+                    "demo_a554314", "20017884", "motdepasse", "", "", "");
+            try {
+                pm.addTerminalMethod(xengo);
+            } catch (IncompatibleTerminalMethodException e) {
+                e.printStackTrace();
+            }
+
         }
     }
 

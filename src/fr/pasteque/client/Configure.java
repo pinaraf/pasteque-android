@@ -237,6 +237,23 @@ public class Configure extends PreferenceActivity
         return payleven;
     }
 
+    public static boolean getWorldline(Context ctx) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+        boolean worldline = prefs.getBoolean("worldline", false);
+        return worldline;
+    }
+
+    public static String getWorldlineAddress(Context ctx) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+        return prefs.getString("worldline_address", "");
+    }
+
+    public static boolean getXengo(Context ctx) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+        boolean xengo = prefs.getBoolean("xengo", false);
+        return xengo;
+    }
+
     private static final int MENU_IMPORT_ID = 0;
     private static final int MENU_DEBUG_ID = 1;
     @Override
