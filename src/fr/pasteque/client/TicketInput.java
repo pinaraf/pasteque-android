@@ -318,6 +318,12 @@ public class TicketInput extends TrackedActivity
                 Ticket current = currSession.getCurrentTicket();
                 for (Ticket t : currSession.getTickets()) {
                     if (t.getLabel().equals(current.getLabel())) {
+			if(Configure.getSyncMode(TicketInput.this) == Configure.AUTO_SYNC_MODE) {
+				TicketUpdater.getInstance().execute(TicketInput.this,
+				null,
+				TicketUpdater.TICKETSERVICE_DELETE |
+				TicketUpdater.TICKETSERVICE_ONE, t.getId());
+			}
                         currSession.getTickets().remove(t);
                         break;
                     }

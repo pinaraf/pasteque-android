@@ -23,6 +23,7 @@ public class TicketUpdater {
 
     static public final int TICKETSERVICE_UPDATE = 1;
     static public final int TICKETSERVICE_SEND = 2;
+    static public final int TICKETSERVICE_DELETE = 3;
     static public final int TICKETSERVICE_ONE = 4;
     static public final int TICKETSERVICE_ALL = 8;
 
@@ -62,6 +63,14 @@ public class TicketUpdater {
         }
     }
 
+    public void delSharedTicket(Context context, String id) {
+	Map<String, String> postBody = SyncUtils.initParams(context,
+	    	    "TicketsAPI", "delShared");
+	postBody.put("id", id);
+	URLTextGetter.getText(SyncUtils.apiUrl(context), postBody,
+	        new DataHandler(TICKETSERVICE_DELETE | TICKETSERVICE_ONE));
+    }
+
     private void getAllSharedTickets(Context context) {
         String baseUrl = SyncUtils.apiUrl(context);
         Map<String, String> ticketsParams = SyncUtils.initParams(context,
@@ -99,7 +108,9 @@ public class TicketUpdater {
             }
             if ((serviceType & TICKETSERVICE_UPDATE) != 0) {
                 this.getSharedTicket(context, ticketNumber);
-            } else {
+            } else if ((serviceType & TICKETSERVICE_DELETE) != 0) {
+		this.delSharedTicket(context, ticketNumber);
+	    } else {
                 Session currSession = SessionData.currentSession(context);
                 for (Ticket t : currSession.getTickets()) {
                     if (t.getId().equals(ticketNumber)) {
@@ -188,6 +199,9 @@ public class TicketUpdater {
                             break;
                         case TICKETSERVICE_SEND | TICKETSERVICE_ONE:
                             Log.e(TAG, content);
+                            break;
+                        case TICKETSERVICE_DELETE | TICKETSERVICE_ONE:
+                            Log.e(TAG, "Ticket deleted");
                             break;
                         }
                     }

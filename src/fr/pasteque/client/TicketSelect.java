@@ -66,6 +66,12 @@ public class TicketSelect extends TrackedActivity implements
     public void onCreate(Bundle state) {
         super.onCreate(state);
         // Set views
+	if (Configure.getSyncMode(this) == Configure.AUTO_SYNC_MODE) {
+		TicketUpdater.getInstance().execute(this,
+				new DataHandler(Configure.getTicketsMode(this), null),
+				TicketUpdater.TICKETSERVICE_UPDATE
+				| TicketUpdater.TICKETSERVICE_ALL);
+	}
         switch (Configure.getTicketsMode(this)) {
         case Configure.STANDARD_MODE:
             setContentView(R.layout.ticket_select_standard);
@@ -79,12 +85,6 @@ public class TicketSelect extends TrackedActivity implements
             ((ExpandableListView) this.list)
                     .setAdapter(new RestaurantTicketsAdapter(PlaceData.floors));
             ((ExpandableListView) this.list).setOnChildClickListener(this);
-            if (Configure.getSyncMode(this) == Configure.AUTO_SYNC_MODE) {
-                TicketUpdater.getInstance().execute(this,
-                        new DataHandler(Configure.getTicketsMode(this), null),
-                        TicketUpdater.TICKETSERVICE_UPDATE
-                        | TicketUpdater.TICKETSERVICE_ALL);
-            }
             break;
         }
 
