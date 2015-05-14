@@ -105,11 +105,12 @@ public class TicketUpdater {
             if (ticketNumber == null) {
                 // Send one ticket without specifying which one
                 return;
-            }
-            if ((serviceType & TICKETSERVICE_UPDATE) != 0) {
-                this.getSharedTicket(context, ticketNumber);
-            } else if ((serviceType & TICKETSERVICE_DELETE) != 0) {
+            } 
+	    if ((serviceType & TICKETSERVICE_DELETE) != 0) {
 		this.delSharedTicket(context, ticketNumber);
+            }
+	    if ((serviceType & TICKETSERVICE_UPDATE) != 0) {
+                this.getSharedTicket(context, ticketNumber);
 	    } else {
                 Session currSession = SessionData.currentSession(context);
                 for (Ticket t : currSession.getTickets()) {
