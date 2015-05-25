@@ -318,12 +318,12 @@ public class TicketInput extends TrackedActivity
                 Ticket current = currSession.getCurrentTicket();
                 for (Ticket t : currSession.getTickets()) {
                     if (t.getLabel().equals(current.getLabel())) {
-			if(Configure.getSyncMode(getApplicationContext()) == Configure.AUTO_SYNC_MODE) {
-				TicketUpdater.getInstance().execute(TicketInput.this,
-				null,
-				TicketUpdater.TICKETSERVICE_DELETE |
-				TicketUpdater.TICKETSERVICE_ONE, t.getId());
-			}
+                        if(Configure.getSyncMode(getApplicationContext()) == Configure.AUTO_SYNC_MODE) {
+                        TicketUpdater.getInstance().execute(TicketInput.this,
+                                null,
+                                TicketUpdater.TICKETSERVICE_DELETE |
+                                TicketUpdater.TICKETSERVICE_ONE, t.getId());
+                        }
                         currSession.getTickets().remove(t);
                         break;
                     }
@@ -711,6 +711,12 @@ public class TicketInput extends TrackedActivity
                     null,
                     TicketUpdater.TICKETSERVICE_SEND
                             | TicketUpdater.TICKETSERVICE_ONE, ticket);
+        }
+        if (Configure.getSyncMode(this) == Configure.AUTO_SYNC_MODE) {
+            TicketUpdater.getInstance().execute(getApplicationContext(),
+                    null,
+                    TicketUpdater.TICKETSERVICE_UPDATE
+                            | TicketUpdater.TICKETSERVICE_ALL);
         }
         // Open ticket picker
         switch (Configure.getTicketsMode(this)) {

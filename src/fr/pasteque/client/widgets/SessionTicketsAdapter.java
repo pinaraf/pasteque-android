@@ -59,7 +59,7 @@ public class SessionTicketsAdapter extends BaseAdapter {
     public int getCount() {
         return SessionData.currentSession(this.ctx).getTickets().size();
     }
-    
+
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         Ticket t = (Ticket) this.getItem(position);

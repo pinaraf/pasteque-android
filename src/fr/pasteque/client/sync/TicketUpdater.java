@@ -10,6 +10,7 @@ import fr.pasteque.client.data.SessionData;
 import fr.pasteque.client.models.Session;
 import fr.pasteque.client.models.Ticket;
 import fr.pasteque.client.utils.URLTextGetter;
+import fr.pasteque.client.widgets.SessionTicketsAdapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
@@ -30,7 +31,7 @@ public class TicketUpdater {
     static public final int UPDATE_ENDED = 1;
     static public final int SEND_ENDED = 2;
 
-    static public final String TAG = "TicketUpdater";
+    static public final String TAG = "Pasteque/TicketUpdater";
 
     static private TicketUpdater instance = null;
 
@@ -41,6 +42,7 @@ public class TicketUpdater {
     }
 
     private void getSharedTicket(Context context, String id) {
+        Log.e(TAG, "Running sync One");
         String baseUrl = SyncUtils.apiUrl(context);
         Map<String, String> ticketsParams = SyncUtils.initParams(context,
                 "TicketsAPI", "getShared");
@@ -50,6 +52,7 @@ public class TicketUpdater {
     }
 
     private void sendSharedTicket(Context context, Ticket t) {
+        Log.e(TAG, "Running sync Send");
         try {
             Map<String, String> postBody = SyncUtils.initParams(context,
                     "TicketsAPI", "share");
@@ -64,14 +67,16 @@ public class TicketUpdater {
     }
 
     public void delSharedTicket(Context context, String id) {
-	Map<String, String> postBody = SyncUtils.initParams(context,
-	    	    "TicketsAPI", "delShared");
-	postBody.put("id", id);
-	URLTextGetter.getText(SyncUtils.apiUrl(context), postBody,
-	        new DataHandler(TICKETSERVICE_DELETE | TICKETSERVICE_ONE));
+        Log.e(TAG, "Running sync Del");
+        Map<String, String> postBody = SyncUtils.initParams(context,
+                "TicketsAPI", "delShared");
+        postBody.put("id", id);
+        URLTextGetter.getText(SyncUtils.apiUrl(context), postBody,
+                new DataHandler(TICKETSERVICE_DELETE | TICKETSERVICE_ONE));
     }
 
     private void getAllSharedTickets(Context context) {
+        Log.e(TAG, "Running sync All");
         String baseUrl = SyncUtils.apiUrl(context);
         Map<String, String> ticketsParams = SyncUtils.initParams(context,
                 "TicketsAPI", "getAllShared");
@@ -105,13 +110,13 @@ public class TicketUpdater {
             if (ticketNumber == null) {
                 // Send one ticket without specifying which one
                 return;
-            } 
-	    if ((serviceType & TICKETSERVICE_DELETE) != 0) {
-		this.delSharedTicket(context, ticketNumber);
             }
-	    if ((serviceType & TICKETSERVICE_UPDATE) != 0) {
+            if ((serviceType & TICKETSERVICE_DELETE) != 0) {
+                this.delSharedTicket(context, ticketNumber);
+            }
+            else if ((serviceType & TICKETSERVICE_UPDATE) != 0) {
                 this.getSharedTicket(context, ticketNumber);
-	    } else {
+            } else {
                 Session currSession = SessionData.currentSession(context);
                 for (Ticket t : currSession.getTickets()) {
                     if (t.getId().equals(ticketNumber)) {
@@ -131,6 +136,7 @@ public class TicketUpdater {
             // TODO: THIS.. IS.. SUICIDE!!!
             Session currSession = SessionData.currentSession(callBackContext);
             currSession.getTickets().clear();
+            new SessionTicketsAdapter(callBackContext).notifyDataSetChanged();
             // Refresh with new content
             JSONArray respArray = resp.getJSONArray("content");
             for (int i = 0; i < respArray.length(); ++i) {
@@ -194,12 +200,14 @@ public class TicketUpdater {
                         switch (this.type) {
                         case TICKETSERVICE_UPDATE | TICKETSERVICE_ALL:
                             parseAllTickets(result);
+                            Log.e(TAG, "Tickets updated");
                             break;
                         case TICKETSERVICE_UPDATE | TICKETSERVICE_ONE:
                             this.objToReturn = parseOneTicket(result.getJSONObject("content"));
+                            Log.e(TAG, "Ticket updated");
                             break;
                         case TICKETSERVICE_SEND | TICKETSERVICE_ONE:
-                            Log.e(TAG, content);
+                            Log.e(TAG, "Ticket sent");
                             break;
                         case TICKETSERVICE_DELETE | TICKETSERVICE_ONE:
                             Log.e(TAG, "Ticket deleted");
