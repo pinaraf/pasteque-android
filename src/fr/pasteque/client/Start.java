@@ -127,7 +127,7 @@ public class Start extends TrackedActivity implements Handler.Callback {
         super.onResume();
         this.updateStatus();
     }
-
+    
     /** Update status line */
     private void updateStatus() {
         String text = "";
@@ -207,7 +207,7 @@ public class Start extends TrackedActivity implements Handler.Callback {
 	switch (requestCode) {
 	case 0:
 	    switch (resultCode) {
-	    case Activity.RESULT_CANCELED:
+	    case Activity.RESULT_CANCELED:  
 		break;
 	    case Activity.RESULT_OK:
 		this.goOn();
@@ -219,7 +219,9 @@ public class Start extends TrackedActivity implements Handler.Callback {
 	    case Activity.RESULT_CANCELED:
 		break;
 	    case Activity.RESULT_OK:
-		Intent i = new Intent(Start.this, Transaction.class);
+		TicketInput.setup(CatalogData.catalog(this),
+				  SessionData.currentSession(this).getCurrentTicket());
+		Intent i = new Intent(Start.this, TicketInput.class);
 		this.startActivity(i);
 		break;
 	    }
@@ -278,7 +280,10 @@ public class Start extends TrackedActivity implements Handler.Callback {
         case Configure.STANDARD_MODE:
             if (SessionData.currentSession(this).hasWaitingTickets()) {
                 // Go directly to first ticket
-                i = new Intent(Start.this, Transaction.class);
+                Session currSession = SessionData.currentSession(this);
+                TicketInput.setup(CatalogData.catalog(this),
+                        currSession.getCurrentTicket());
+                i = new Intent(Start.this, TicketInput.class);
                 Start.this.startActivity(i);
                 Start.this.overridePendingTransition(R.transition.fade_in,
                         R.transition.fade_out);
@@ -289,9 +294,11 @@ public class Start extends TrackedActivity implements Handler.Callback {
             // Create a ticket if not existing and go to edit
             Session currSession = SessionData.currentSession(this);
             if (currSession.getCurrentTicket() == null) {
-                currSession.newTicket();
+                Ticket t = currSession.newTicket();
             }
-            i = new Intent(Start.this, Transaction.class);
+            TicketInput.setup(CatalogData.catalog(this),
+                                currSession.getCurrentTicket());
+            i = new Intent(Start.this, TicketInput.class);
             Start.this.startActivity(i);
             Start.this.overridePendingTransition(R.transition.fade_in,
                     R.transition.fade_out);

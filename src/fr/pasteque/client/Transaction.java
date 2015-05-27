@@ -5,13 +5,10 @@ import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentManager;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.view.ViewPager;
 import android.support.v13.app.FragmentStatePagerAdapter;
@@ -21,27 +18,12 @@ import android.util.SparseBooleanArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
-import android.widget.Toast;
-
-import com.mpowa.android.powapos.common.dataobjects.PowaDeviceObject;
-import com.mpowa.android.powapos.peripherals.PowaPOS;
-import com.mpowa.android.powapos.peripherals.drivers.s10.PowaS10Scanner;
-import com.mpowa.android.powapos.peripherals.drivers.tseries.PowaTSeries;
-import com.mpowa.android.powapos.peripherals.platform.base.PowaPOSEnums;
-import com.mpowa.android.powapos.peripherals.platform.base.PowaPeripheralCallback;
-import com.mpowa.android.powapos.peripherals.platform.base.PowaScanner;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
-import fr.pasteque.client.data.CatalogData;
 import fr.pasteque.client.data.CompositionData;
 import fr.pasteque.client.data.CustomerData;
 import fr.pasteque.client.data.ReceiptData;
@@ -55,15 +37,9 @@ import fr.pasteque.client.fragments.ViewPageFragment;
 import fr.pasteque.client.models.Catalog;
 import fr.pasteque.client.models.CompositionInstance;
 import fr.pasteque.client.models.Customer;
-import fr.pasteque.client.models.Payment;
 import fr.pasteque.client.models.Product;
-import fr.pasteque.client.models.Receipt;
 import fr.pasteque.client.models.Session;
-import fr.pasteque.client.models.Ticket;
 import fr.pasteque.client.models.User;
-import fr.pasteque.client.printing.PowaPrinter;
-import fr.pasteque.client.printing.PrinterConnection;
-import fr.pasteque.client.utils.PowaPosSingleton;
 import fr.pasteque.client.utils.TrackedActivity;
 
 public class Transaction extends TrackedActivity
@@ -71,18 +47,12 @@ public class Transaction extends TrackedActivity
         ProductScaleDialog.Listener,
         ManualInputDialog.Listener,
         TicketFragment.Listener,
-        PaymentFragment.Listener,
         ViewPager.OnPageChangeListener {
 
-    // Activity Result code
+    //List of codes. Java enums sucks...
     private static final int COMPOSITION = 1;
     private static final int CUSTOMER_SELECT = 2;
     private static final int CUSTOMER_CREATE = 3;
-    private static final int RESTAURANT_TICKET_FINISH = 4;
-
-    //  SERIALIZE STRING
-    private static final String PRINT_STATE = "printEnabled";
-    private static final String PAYMENT_CLOSED = "paymentClosed";
 
     private static final String LOG_TAG = "Pasteque/Transaction";
     private static final int CATALOG_FRAG = 0;
@@ -93,23 +63,15 @@ public class Transaction extends TrackedActivity
             new TransPage(0.35f, TicketFragment.class),
             new TransPage(0.65f, PaymentFragment.class)};
 
-    // Data
     private Context mContext;
-    private Ticket mPendingTicket;
-    private TransactionPagerAdapter mPagerAdapter;
-    //private PowaPOS mPowa;
-    private Timer mPowaStatusCheck;
-    private PrinterConnection mPrinter;
-    private boolean mbPrintEnabled;
-    private boolean mbPaymentClosed;
-
-    // Views
     private ViewPager mPager;
+    private TransactionPagerAdapter mPagerAdapter;
+    private Customer mCurrentCustomer;
 
-    // Others
     private class TransPage {
         // Between 0.0 - 1.0
         private float mWidth;
+        private String mTag;
         private Class<? extends ViewPageFragment> mPageFragment;
 
         public TransPage(float width, @NonNull Class<? extends ViewPageFragment> pageFragment) {
@@ -126,58 +88,11 @@ public class Transaction extends TrackedActivity
         }
     }
 
-    private final Handler.Callback mPrinterCallback = new Handler.Callback() {
-        private void endPayment() {
-            PaymentFragment p = getPaymentFragment();
-            p.finish();
-            mbPaymentClosed = false;
-            disposePaymentFragment(p);
-        }
-
-        @Override
-        public boolean handleMessage(Message msg) {
-            switch (msg.what) {
-                case PrinterConnection.PRINT_DONE: {
-                    endPayment();
-                    return true;
-                }
-                case PrinterConnection.PRINT_CTX_ERROR: {
-                    Exception e = (Exception) msg.obj;
-                    Log.w(LOG_TAG, "Unable to connect to printer", e);
-                    if (mbPaymentClosed) {
-                        Toast.makeText(mContext, R.string.print_no_connexion,
-                                Toast.LENGTH_LONG).show();
-                        endPayment();
-                    } else {
-                        Error.showError(R.string.print_no_connexion, Transaction.this);
-                    }
-                    return true;
-                }
-                case PrinterConnection.PRINT_CTX_FAILED:
-                    // Give up
-                    if (mbPaymentClosed) {
-                        Toast.makeText(mContext, R.string.print_no_connexion,
-                                Toast.LENGTH_LONG).show();
-                        endPayment();
-                    } else {
-                        disablePrinting();
-                        Error.showError(R.string.print_no_connexion, Transaction.this);
-                    }
-                    return true;
-                default:
-                    return false;
-            }
-        }
-    };
-
-    //  FUNCTIONS
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        reuse(savedInstanceState);
 
-        mContext = this;
+        mContext = getApplicationContext();
         mPagerAdapter = new TransactionPagerAdapter(getFragmentManager());
         mPager = new ViewPager(mContext);
         // There is View.generateViewId() but min_api < 17
@@ -186,34 +101,6 @@ public class Transaction extends TrackedActivity
         mPager.setBackgroundResource(R.color.main_bg);
         mPager.setOnPageChangeListener(this);
         setContentView(mPager);
-        //TODO: Check presence of barcode scanner
-        /*Intent i = new Intent("com.google.zxing.client.android.SCAN");
-        List<ResolveInfo> list = this.getPackageManager().queryIntentActivities(i,
-                PackageManager.MATCH_DEFAULT_ONLY);
-        if (list.size() != 0) {
-            this.findViewById(R.id.scan_customer).setVisibility(View.GONE);
-        }*/
-        //TODO: Check presence of tariff areas
-        /*if (TariffAreaData.areas.size() == 0) {
-            this.findViewById(R.id.change_area).setVisibility(View.GONE);
-            this.tariffArea.setVisibility(View.GONE);
-        }*/
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        initPowa();
-        initPrinter();
-        //initPowaTimer();
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        //stopTimer();
-        stopPowa();
-        stopPrinter();
     }
 
     @Override
@@ -228,49 +115,36 @@ public class Transaction extends TrackedActivity
                 break;
             case CUSTOMER_SELECT:
                 if (resultCode == Activity.RESULT_OK) {
-                    onCustomerSelected(null);
-                }
-                break;
-            case CUSTOMER_CREATE:
-                if (resultCode == Activity.RESULT_OK) {
-                    if (mPager.getCurrentItem() != CATALOG_FRAG) {
-                        updatePaymentFragment(null, null);
-                    }
-                    if (CustomerData.customers.size() == 1 && getActionBar() != null) {
-                        invalidateOptionsMenu();
-                    }
+                    TicketFragment ticket = getTicketFragment();
+                    ticket.updateView();
+                    disposeTicketFragment(ticket);
                     try {
-                        SessionData.saveSession(mContext);
+                        SessionData.saveSession(this);
                     } catch (IOException ioe) {
                         Log.e(LOG_TAG, "Unable to save session", ioe);
                         Error.showError(R.string.err_save_session, this);
                     }
                 }
                 break;
-            // TODO: TEST restaurant implementation.
-            case RESTAURANT_TICKET_FINISH:
-                switch (resultCode) {
-                    case Activity.RESULT_CANCELED:
-                        // Back to start
-                        finish();
-                        break;
-                    case Activity.RESULT_OK:
-                        mPendingTicket = SessionData.currentSession(mContext).getCurrentTicket();
-                        mPager.setCurrentItem(CATALOG_FRAG);
-                        break;
+            case CUSTOMER_CREATE:
+                if (resultCode == Activity.RESULT_OK) {
+                    Session sessionData = SessionData.currentSession(mContext);
+                    mCurrentCustomer = sessionData.getCurrentTicket().getCustomer();
+                    if (CustomerData.customers.size() == 1 && getActionBar() != null) {
+                        invalidateOptionsMenu();
+                    }
+                    try {
+                        SessionData.saveSession(this);
+                    } catch (IOException ioe) {
+                        Log.e(LOG_TAG, "Unable to save session", ioe);
+                        Error.showError(R.string.err_save_session, this);
+                    }
                 }
                 break;
             default:
                 super.onActivityResult(requestCode, resultCode, data);
                 break;
         }
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle state) {
-        super.onSaveInstanceState(state);
-        state.putBoolean(PRINT_STATE, mbPrintEnabled);
-        state.putBoolean(PAYMENT_CLOSED, mbPaymentClosed);
     }
 
     /*
@@ -289,7 +163,7 @@ public class Transaction extends TrackedActivity
                 p.getTaxedPrice(ticket.getTariffArea()));
         disposeTicketFragment(ticket);
 
-        AlertDialog.Builder b = new AlertDialog.Builder(mContext);
+        AlertDialog.Builder b = new AlertDialog.Builder(this);
         b.setTitle(p.getLabel());
         b.setMessage(message);
         b.setNeutralButton(android.R.string.ok, null);
@@ -325,83 +199,6 @@ public class Transaction extends TrackedActivity
     }
 
     @Override
-    public boolean onPfPrintReceipt(Receipt r) {
-        mbPaymentClosed = true;
-        // Check printer
-        if (mPrinter != null && mbPrintEnabled) {
-            mPrinter.printReceipt(r);
-            /*ProgressDialog progress = new ProgressDialog(mContext);
-            progress.setIndeterminate(true);
-            progress.setMessage(getString(R.string.print_printing));
-            progress.show();*/
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public void onPfCustomerListClick() {
-        showCustomerList();
-    }
-
-    @Override
-    public Receipt onPfSaveReceipt(ArrayList<Payment> p) {
-        TicketFragment t = getTicketFragment();
-        Ticket ticketData = t.getTicketData();
-        // Create and save the receipt and remove from session
-        Session currSession = SessionData.currentSession(mContext);
-        User u = currSession.getUser();
-        final Receipt r = new Receipt(ticketData, p, u);
-        ReceiptData.addReceipt(r);
-        try {
-            ReceiptData.save(mContext);
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "Unable to save receipts", e);
-            Error.showError(R.string.err_save_receipts, this);
-        }
-        currSession.closeTicket(ticketData);
-        try {
-            SessionData.saveSession(mContext);
-        } catch (IOException ioe) {
-            Log.e(LOG_TAG, "Unable to save session", ioe);
-            Error.showError(R.string.err_save_session, this);
-        }
-        disposeTicketFragment(t);
-        return r;
-    }
-
-    @Override
-    public void onPfFinished() {
-        PaymentFragment payment = getPaymentFragment();
-        payment.resetPaymentList();
-        disposePaymentFragment(payment);
-        Session currSession = SessionData.currentSession(mContext);
-        // Return to a new ticket edit
-        switch (Configure.getTicketsMode(mContext)) {
-            case Configure.SIMPLE_MODE:
-                mPendingTicket = currSession.newTicket();
-                mPager.setCurrentItem(CATALOG_FRAG);
-                break;
-            case Configure.STANDARD_MODE:
-                if (!currSession.hasTicket()) {
-                    mPendingTicket = currSession.newTicket();
-                    mPager.setCurrentItem(CATALOG_FRAG);
-                } else {
-                    // Pick last ticket
-                    currSession.setCurrentTicket(currSession.getTickets().get(currSession.getTickets().size() - 1));
-                    mPendingTicket = currSession.getCurrentTicket();
-                    mPager.setCurrentItem(CATALOG_FRAG);
-                }
-                break;
-            case Configure.RESTAURANT_MODE:
-                Intent i = new Intent(mContext, TicketSelect.class);
-                i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivityForResult(i, RESTAURANT_TICKET_FINISH);
-                break;
-        }
-    }
-
-    @Override
     public void onPageScrolled(int i, float v, int i1) {
     }
 
@@ -412,20 +209,16 @@ public class Transaction extends TrackedActivity
                 TicketFragment ticket = getTicketFragment();
                 ticket.setState(TicketFragment.CHECKIN_STATE);
                 ticket.updatePageState();
-                if (mPendingTicket != null) {
-                    ticket.switchTicket(mPendingTicket);
-                }
                 disposeTicketFragment(ticket);
                 invalidateOptionsMenu();
                 break;
             }
             case TICKET_FRAG:
             case PAYMENT_FRAG: {
-                TicketFragment t = getTicketFragment();
-                t.setState(TicketFragment.CHECKOUT_STATE);
-                t.updatePageState();
-                updatePaymentFragment(t, null);
-                disposeTicketFragment(t);
+                TicketFragment ticket = getTicketFragment();
+                ticket.setState(TicketFragment.CHECKOUT_STATE);
+                ticket.updatePageState();
+                disposeTicketFragment(ticket);
                 invalidateOptionsMenu();
                 break;
             }
@@ -450,7 +243,7 @@ public class Transaction extends TrackedActivity
         if (CustomerData.customers.size() == 0) {
             menu.findItem(R.id.ab_menu_customer_list).setEnabled(false);
         }
-        User cashier = SessionData.currentSession(mContext).getUser();
+        User cashier = SessionData.currentSession(this).getUser();
         if (cashier.hasPermission("fr.pasteque.pos.panels.JPanelCloseMoney")) {
             menu.findItem(R.id.ab_menu_close_session).setEnabled(true);
         }
@@ -460,7 +253,7 @@ public class Transaction extends TrackedActivity
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         if (!ReceiptData.hasReceipts()
-                || !SessionData.currentSession(mContext).getUser().hasPermission("sales.EditTicket")) {
+                || !SessionData.currentSession(this).getUser().hasPermission("sales.EditTicket")) {
             menu.findItem(R.id.ab_menu_past_ticket).setVisible(false);
         }
         if (mPager.getCurrentItem() != CATALOG_FRAG) {
@@ -473,18 +266,21 @@ public class Transaction extends TrackedActivity
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.ab_menu_cashdrawer:
-                PowaPosSingleton.getInstance().openCashDrawer();
-                //mPowa.openCashDrawer();
+                //TODO: Implement this
+                //TicketInput.this.powa.openCashDrawer();
                 break;
             case R.id.ab_menu_manual_input:
                 DialogFragment dial = new ManualInputDialog();
                 dial.show(getFragmentManager(), ManualInputDialog.TAG);
                 break;
             case R.id.ab_menu_customer_list:
-                showCustomerList();
+                Intent customerSelect = new Intent(this, CustomerSelect.class);
+                CustomerSelect.setup(mCurrentCustomer != null);
+                this.startActivityForResult(customerSelect, CUSTOMER_SELECT);
                 break;
             case R.id.ab_menu_customer_add:
-                createNewCustomer();
+                Intent createCustomer = new Intent(this, CustomerCreate.class);
+                startActivityForResult(createCustomer, CUSTOMER_CREATE);
                 break;
             case R.id.ab_menu_calendar:
                 java.util.Calendar starTime = Calendar.getInstance();
@@ -496,7 +292,7 @@ public class Transaction extends TrackedActivity
                 startActivity(openCalendar);
                 break;
             case R.id.ab_menu_past_ticket:
-                Intent receiptSelect = new Intent(mContext, ReceiptSelect.class);
+                Intent receiptSelect = new Intent(this, ReceiptSelect.class);
                 this.startActivity(receiptSelect);
                 break;
             case R.id.ab_menu_close_session:
@@ -520,150 +316,36 @@ public class Transaction extends TrackedActivity
      *  PRIVATES
      */
 
-    // CONSTRUCTION RELATED FUNCTIONS
 
-    private void initPowa() {
-        /*// Init PowaPOS T25 for scanner and base
-        mPowa = new PowaPOS(mContext, new TransPowaCallback());
-
-        PowaTSeries pos = new PowaTSeries(mContext);
-        mPowa.addPeripheral(pos);
-
-        PowaScanner scanner = new PowaS10Scanner(mContext);
-        mPowa.addPeripheral(scanner);
-
-        // Get and bind scanner
-        List<PowaDeviceObject> scanners = mPowa.getAvailableScanners();
-        if (scanners.size() > 0) {
-            mPowa.selectScanner(scanners.get(0));
-        } else {
-            Log.w(LOG_TAG, "Scanner not found");
-        }*/
-        PowaPosSingleton.getInstance().create(getApplicationContext(), new TransPowaCallback());
-        PowaTSeries pos = new PowaTSeries(mContext);
-        PowaPosSingleton.getInstance().addPeripheral(pos);
-
-        PowaScanner scanner = new PowaS10Scanner(mContext);
-        PowaPosSingleton.getInstance().addPeripheral(scanner);
-
-        // Get and bind scanner
-        List<PowaDeviceObject> scanners = PowaPosSingleton.getInstance().getAvailableScanners();
-        if (scanners.size() > 0) {
-            PowaPosSingleton.getInstance().selectScanner(scanners.get(0));
-        } else {
-            Log.w(LOG_TAG, "Scanner not found");
-        }
+    /*
+     *  To be used with dispose function
+     *  i.e:    SomeFragment sFrag = getSomeFragment();
+     *          // Code using sFrag
+     *          disposeSomeFragment(sFrag);
+     */
+    private CatalogFragment getCatalogFragment() {
+        return (CatalogFragment) mPagerAdapter.getFragment(mPager, CATALOG_FRAG);
     }
 
-    private void initPowaTimer() {
-        // Start timer to check rotation (every second after 3 seconds)
-        if (mPowaStatusCheck == null) {
-            mPowaStatusCheck = new Timer();
-            TimerTask task = new TimerTask() {
-                @Override
-                public void run() {
-                    try {
-                        PowaPosSingleton.getInstance().requestMCURotationSensorStatus();
-                        //Transaction.this.mPowa.requestMCURotationSensorStatus();
-                    } catch (Exception e) {
-                        Log.w(LOG_TAG, "Rotation check failed", e);
-                    }
-                }
-            };
-            mPowaStatusCheck.schedule(task, 3000, 1000);
-        }
+    private TicketFragment getTicketFragment() {
+        return (TicketFragment) mPagerAdapter.getFragment(mPager, TICKET_FRAG);
     }
 
-    private void initPrinter() {
-        mPrinter = new PrinterConnection(new Handler(mPrinterCallback));
-        try {
-            if (!mPrinter.connect(mContext)) {
-                disablePrinting();
-            }
-        } catch (IOException e) {
-            Log.w(LOG_TAG, "Unable to connect to printer", e);
-            fr.pasteque.client.Error.showError(R.string.print_no_connexion, this);
-            disablePrinting();
-        }
+    private PaymentFragment getPaymentFragment() {
+        return (PaymentFragment) mPagerAdapter.getFragment(mPager, PAYMENT_FRAG);
     }
 
-    private void stopPowa() {
-        PowaPosSingleton.getInstance().dispose();
-        //mPowa.dispose();
+    private void disposeCatalogFragment(CatalogFragment frag) {
+        mPagerAdapter.destroyForcedItem(mPager, CATALOG_FRAG, frag);
     }
 
-    private void stopTimer() {
-        if (mPowaStatusCheck != null) {
-            mPowaStatusCheck.cancel();
-            mPowaStatusCheck = null;
-        }
+    private void disposeTicketFragment(TicketFragment frag) {
+        mPagerAdapter.destroyForcedItem(mPager, TICKET_FRAG, frag);
     }
 
-    private void stopPrinter() {
-        if (mPrinter != null) {
-            try {
-                mPrinter.disconnect();
-                mPrinter = null;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+    private void disposePaymentFragment(PaymentFragment frag) {
+        mPagerAdapter.destroyForcedItem(mPager, PAYMENT_FRAG, frag);
     }
-
-    // THIS CLASS DATA RELATED FUNCTIONS
-
-    private void reuse(Bundle savedState) {
-        if (savedState == null) {
-            mbPrintEnabled = true;
-            mbPaymentClosed = false;
-        } else {
-            mbPrintEnabled = savedState.getBoolean(PRINT_STATE);
-            mbPaymentClosed = savedState.getBoolean(PAYMENT_CLOSED);
-        }
-    }
-
-    private void disablePrinting() {
-        mPrinter = null;
-    }
-
-    // CUSTOMER RELATED FUNCTIONS
-
-    private void createNewCustomer() {
-        Intent createCustomer = new Intent(mContext, CustomerCreate.class);
-        startActivityForResult(createCustomer, CUSTOMER_CREATE);
-    }
-
-    private void showCustomerList() {
-        TicketFragment t = getTicketFragment();
-        boolean setup = t.getCustomer() != null;
-        disposeTicketFragment(t);
-        Intent customerSelect = new Intent(mContext, CustomerSelect.class);
-        CustomerSelect.setup(setup);
-        startActivityForResult(customerSelect, CUSTOMER_SELECT);
-    }
-
-    private void onCustomerSelected(TicketFragment ticket) {
-        TicketFragment localTicket;
-        localTicket = ticket;
-        if (ticket == null) {
-            localTicket = getTicketFragment();
-        }
-        localTicket.updateView();
-        if (mPager.getCurrentItem() != CATALOG_FRAG) {
-            updatePaymentFragment(ticket, null);
-        }
-        if (ticket == null) {
-            disposeTicketFragment(localTicket);
-        }
-        try {
-            SessionData.saveSession(mContext);
-        } catch (IOException ioe) {
-            Log.e(LOG_TAG, "Unable to save session", ioe);
-            Error.showError(R.string.err_save_session, this);
-        }
-    }
-
-    // PRODUCT RELATED FUNCTIONS
 
     /**
      * Asks for complementary product information before adding it to ticket
@@ -674,9 +356,9 @@ public class Transaction extends TrackedActivity
     private void registerAProduct(Product p, Catalog catData) {
         // TODO: COMPOSITION NOT TESTED
         if (CompositionData.isComposition(p)) {
-            Intent i = new Intent(mContext, CompositionInput.class);
+            Intent i = new Intent(this, CompositionInput.class);
             CompositionInput.setup(catData, CompositionData.getComposition(p.getId()));
-            startActivityForResult(i, COMPOSITION);
+            this.startActivityForResult(i, COMPOSITION);
         } else if (p.isScaled()) {
             // If the product is scaled, asks the weight
             ProductScaleDialog dial = ProductScaleDialog.newInstance(p);
@@ -706,84 +388,6 @@ public class Transaction extends TrackedActivity
         ticket.addScaledProduct(p, weight);
         ticket.updateView();
         disposeTicketFragment(ticket);
-    }
-
-    private void readBarcode(String code) {
-        // Is it a customer card ?
-        for (Customer c : CustomerData.customers) {
-            if (code.equals(c.getCard())) {
-                TicketFragment ticket = getTicketFragment();
-                ticket.setCustomer(c);
-                onCustomerSelected(ticket);
-                disposeTicketFragment(ticket);
-                return;
-            }
-        }
-        // Is it a product ?
-        Catalog cat = CatalogData.catalog(mContext);
-        Product p = cat.getProductByBarcode(code);
-        if (p != null) {
-            CatalogFragment catFrag = getCatalogFragment();
-            registerAProduct(p, catFrag.getCatalogData());
-            disposeCatalogFragment(catFrag);
-            String text = getString(R.string.barcode_found, p.getLabel());
-            Toast.makeText(mContext, text, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        // Nothing found
-        String text = getString(R.string.barcode_not_found, code);
-        Toast.makeText(mContext, text, Toast.LENGTH_LONG).show();
-    }
-
-    //  FRAGMENT RELATED FUNCTIONS
-
-    /**
-     * To be used with dispose function
-     * i.e:    SomeFragment sFrag = getSomeFragment();
-     * // Code using sFrag
-     * disposeSomeFragment(sFrag);
-     */
-    private CatalogFragment getCatalogFragment() {
-        return (CatalogFragment) mPagerAdapter.getFragment(mPager, CATALOG_FRAG);
-    }
-
-    private TicketFragment getTicketFragment() {
-        return (TicketFragment) mPagerAdapter.getFragment(mPager, TICKET_FRAG);
-    }
-
-    private PaymentFragment getPaymentFragment() {
-        return (PaymentFragment) mPagerAdapter.getFragment(mPager, PAYMENT_FRAG);
-    }
-
-    private void disposeCatalogFragment(CatalogFragment frag) {
-        mPagerAdapter.destroyForcedItem(mPager, CATALOG_FRAG, frag);
-    }
-
-    private void disposeTicketFragment(TicketFragment frag) {
-        mPagerAdapter.destroyForcedItem(mPager, TICKET_FRAG, frag);
-    }
-
-    private void disposePaymentFragment(PaymentFragment frag) {
-        mPagerAdapter.destroyForcedItem(mPager, PAYMENT_FRAG, frag);
-    }
-
-    private void updatePaymentFragment(TicketFragment t, PaymentFragment p) {
-        boolean bDisposeTicket = false;
-        boolean bDisposePayment = false;
-        if (t == null) {
-            t = getTicketFragment();
-            bDisposeTicket = true;
-        }
-        if (p == null) {
-            p = getPaymentFragment();
-            bDisposePayment = true;
-        }
-        p.setCurrentCustomer(t.getCustomer());
-        p.setTotalPrice(t.getTotalPrice());
-        p.setTicketPrepaid(t.getTicketPrepaid());
-        p.updateView();
-        if (bDisposeTicket) disposeTicketFragment(t); // If layout is accepted per android doc
-        if (bDisposePayment) disposePaymentFragment(p);
     }
 
     /*
@@ -867,115 +471,6 @@ public class Transaction extends TrackedActivity
             if (mWasForced.get(position, false)) {
                 destroyItem(container, position, object);
             }
-        }
-    }
-
-    /*
-     *  CALLBACK
-     */
-
-    private class TransPowaCallback extends PowaPeripheralCallback {
-
-        @Override
-        public void onMCUInitialized(PowaPOSEnums.InitializedResult initializedResult) {
-
-        }
-
-        @Override
-        public void onMCUFirmwareUpdateStarted() {
-
-        }
-
-        @Override
-        public void onMCUFirmwareUpdateProgress(int i) {
-
-        }
-
-        @Override
-        public void onMCUFirmwareUpdateFinished() {
-
-        }
-
-        @Override
-        public void onMCUBootloaderUpdateStarted() {
-
-        }
-
-        @Override
-        public void onMCUBootloaderUpdateProgress(int i) {
-
-        }
-
-        @Override
-        public void onMCUBootloaderUpdateFinished() {
-
-        }
-
-        @Override
-        public void onMCUBootloaderUpdateFailed(PowaPOSEnums.BootloaderUpdateError bootloaderUpdateError) {
-
-        }
-
-        @Override
-        public void onMCUSystemConfiguration(Map<String, String> map) {
-
-        }
-
-        @Override
-        public void onUSBDeviceAttached(PowaPOSEnums.PowaUSBCOMPort powaUSBCOMPort) {
-        }
-
-        @Override
-        public void onUSBDeviceDetached(PowaPOSEnums.PowaUSBCOMPort powaUSBCOMPort) {
-
-        }
-
-        @Override
-        public void onCashDrawerStatus(PowaPOSEnums.CashDrawerStatus cashDrawerStatus) {
-
-        }
-
-        @Override
-        public void onRotationSensorStatus(PowaPOSEnums.RotationSensorStatus rotationSensorStatus) {
-            if (rotationSensorStatus == PowaPOSEnums.RotationSensorStatus.ROTATED) {
-                Transaction.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        //Transaction.this.stopTimer();
-                        Transaction.this.createNewCustomer();
-                    }
-                });
-            }
-        }
-
-        @Override
-        public void onScannerInitialized(PowaPOSEnums.InitializedResult initializedResult) {
-        }
-
-        @Override
-        public void onScannerRead(String s) {
-            final String code = s;
-            Transaction.this.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Transaction.this.readBarcode(code);
-                }
-            });
-        }
-
-        @Override
-        public void onPrintJobCompleted(PowaPOSEnums.PrintJobResult printJobResult) {
-            //PowaPosSingleton.getInstance().openCashDrawer();
-            /*if (PowaPrinter.this.callback != null) {
-                Message m = new Message();
-                m.what = PRINT_DONE;
-                PowaPrinter.this.callback.sendMessageDelayed(m, 3000);
-            }*/
-        }
-
-        @Override
-        public void onUSBReceivedData(PowaPOSEnums.PowaUSBCOMPort powaUSBCOMPort, byte[] bytes) {
-
         }
     }
 }

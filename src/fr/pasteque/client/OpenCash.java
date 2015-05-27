@@ -68,7 +68,9 @@ public class OpenCash extends TrackedActivity {
             Error.showError(R.string.err_save_cash, this);
         }
         // Go to ticket screen
-        Intent i = new Intent(this, Transaction.class);
+        TicketInput.setup(CatalogData.catalog(this),
+                          SessionData.currentSession(this).getCurrentTicket());
+        Intent i = new Intent(this, TicketInput.class);
         this.setResult(Activity.RESULT_OK);
         // Kill
         this.finish();

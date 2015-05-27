@@ -15,7 +15,6 @@ import fr.pasteque.client.models.Catalog;
 import fr.pasteque.client.models.Category;
 import fr.pasteque.client.models.Product;
 import fr.pasteque.client.widgets.CategoriesAdapter;
-import fr.pasteque.client.widgets.CategoryItem;
 import fr.pasteque.client.widgets.ProductBtnItem;
 import fr.pasteque.client.widgets.ProductsBtnAdapter;
 
@@ -36,7 +35,6 @@ public class CatalogFragment extends ViewPageFragment {
     private Gallery mViewCategories;
     private GridView mViewProducts;
 
-    @SuppressWarnings("unused") // Used via class reflection
     public static CatalogFragment newInstance(int pageNumber) {
         CatalogFragment frag = new CatalogFragment();
         ViewPageFragment.initPageNumber(pageNumber, frag);
@@ -113,7 +111,8 @@ public class CatalogFragment extends ViewPageFragment {
     private class CategoryItemSelectedListener implements AdapterView.OnItemSelectedListener {
         @Override
         public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-            mCurrentCategory = ((CategoryItem) view).getCategory();
+            CategoriesAdapter catAdapt = (CategoriesAdapter) mViewCategories.getAdapter();
+            mCurrentCategory = (Category) catAdapt.getItem(position);
             CatalogFragment.this.updateProductsView();
         }
 
