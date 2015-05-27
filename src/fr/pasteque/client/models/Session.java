@@ -27,11 +27,13 @@ public class Session implements Serializable {
     private List<Ticket> runningTickets;
     private Ticket currentTicket;
     private int ticketNumber;
+    private List<TicketObserver> ticketObservers;
 
     /** Create an empty session */
     public Session() {
         this.runningTickets = new ArrayList<Ticket>();
         this.ticketNumber = 1;
+        this.ticketObservers = new ArrayList<TicketObserver>();
     }
 
     public void setUser(User u) {
@@ -60,6 +62,7 @@ public class Session implements Serializable {
         Ticket t = new Ticket(p.getId(), p.getName());
         this.runningTickets.add(t);
         this.currentTicket = t;
+        this.ticketUpdated();
         return t;
     }
 
@@ -75,12 +78,16 @@ public class Session implements Serializable {
         if (!exist) {
             runningTickets.add(t);
         }
+        this.ticketUpdated();
     }
 
     public void closeTicket(Ticket t) {
         this.runningTickets.remove(t);
+        this.ticketUpdated();
     }
-    
+
+    /** Get the list of shared tickets. You should not edit this list
+     * directly for observers to be notified. */
     public List<Ticket> getTickets() {
         return this.runningTickets;
     }
@@ -127,4 +134,20 @@ public class Session implements Serializable {
         return this.currentTicket;
     }
 
+    /** Trigger observers */
+    private void ticketUpdated() {
+        for (TicketObserver o : this.ticketObservers) {
+            o.sharedTicketsChanged(this);
+        }
+    }
+    public void addObserver(TicketObserver o) {
+        this.ticketObservers.add(o);
+    }
+    public void removeObserver(TicketObserver o) {
+        this.ticketObservers.remove(o);
+    }
+
+    public static interface TicketObserver {
+        public void sharedTicketsChanged(Session s);
+    }
 }

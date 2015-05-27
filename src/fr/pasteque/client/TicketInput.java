@@ -50,6 +50,7 @@ import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListPopupWindow;
 import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -724,14 +725,16 @@ public class TicketInput extends TrackedActivity
                 // Open selector popup
                 try {
                     final ListPopupWindow popup = new ListPopupWindow(this);
-                    ListAdapter adapter = new SessionTicketsAdapter(this);
+                    final SessionTicketsAdapter adapter = new SessionTicketsAdapter(this);
+                    final Session currentSession = SessionData.currentSession(TicketInput.this);
+                    currentSession.addObserver(adapter);
                     popup.setAnchorView(this.ticketLabel);
                     popup.setAdapter(adapter);
                     popup.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                         public void onItemClick(AdapterView<?> parent, View v,
                                                 int position, long id) {
                             // TODO: handle connected mode on switch
-                            Ticket t = SessionData.currentSession(TicketInput.this).getTickets().get(position);
+                            Ticket t = currentSession.getTickets().get(position);
                             TicketInput.this.switchTicket(t);
                             popup.dismiss();
                         }
@@ -739,6 +742,11 @@ public class TicketInput extends TrackedActivity
                         public void onNothingSelected(AdapterView v) {
                         }
                     });
+                    popup.setOnDismissListener(new PopupWindow.OnDismissListener() {
+                            public void onDismiss() {
+                                currentSession.removeObserver(adapter);
+                            }
+                        });
                     popup.setWidth(ScreenUtils.inToPx(2, this));
                     int ticketsCount = adapter.getCount();
                     int height = (int) (ScreenUtils.dipToPx(SessionTicketsAdapter.HEIGHT_DIP * Math.min(5, ticketsCount), this) + this.ticketLabel.getHeight() / 2 + 0.5f);

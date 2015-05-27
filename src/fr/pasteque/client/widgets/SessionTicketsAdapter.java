@@ -19,6 +19,8 @@ package fr.pasteque.client.widgets;
 
 import fr.pasteque.client.R;
 import fr.pasteque.client.data.SessionData;
+import fr.pasteque.client.models.Session;
+import fr.pasteque.client.models.Session.TicketObserver;
 import fr.pasteque.client.models.Ticket;
 
 import android.content.Context;
@@ -28,7 +30,8 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
-public class SessionTicketsAdapter extends BaseAdapter {
+public class SessionTicketsAdapter extends BaseAdapter
+    implements TicketObserver {
 
     public static final float HEIGHT_DIP = 52.8f; // same as in xml with margin
 
@@ -73,5 +76,9 @@ public class SessionTicketsAdapter extends BaseAdapter {
         ((TextView)convertView.findViewById(R.id.ticket_label)).setText(label);
         ((TextView)convertView.findViewById(R.id.ticket_prd_count)).setText(String.valueOf(t.getArticlesCount()));
         return convertView;
+    }
+
+    public void sharedTicketsChanged(Session s) {
+        this.notifyDataSetChanged();
     }
 }
