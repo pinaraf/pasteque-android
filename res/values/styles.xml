@@ -27,14 +27,14 @@
     <color name="content3_bg">#F9B60E</color>
 
     <!-- Action bar, popup tabs... -->
-    <color name="accent1">#36425F</color>
-    <color name="accent1_pressed">#1536425F</color>
+    <color name="accent1">#00398A</color>
+    <color name="accent1_pressed">#005AD9</color>
     <!-- Action/Positive button, tab selector... -->
-    <color name="accent2">#A3351E</color>
-    <color name="accent2_pressed">#252525</color>
+    <color name="accent2">#00398A</color>
+    <color name="accent2_pressed">#005AD9</color>
     <!-- Negative button... -->
-    <color name="accent3">#7A7A7A</color>
-    <color name="accent3_pressed">#C2C2C2</color>
+    <color name="accent3">#00398A</color>
+    <color name="accent3_pressed">#005AD9</color>
 
     <!-- Main text color. main_txt goes on main_bg etc.. -->
     <color name="main_txt">#FFFFFF</color>
@@ -178,7 +178,7 @@
         <item name="android:background">@color/accent1</item>
         <item name="android:displayOptions">useLogo|showHome</item>
         <!-- Hides actionbar text -->
-        <item name="android:icon">@drawable/ab_logo</item>
+        <item name="android:icon">@drawable/ab_logo_worldline</item>
     </style>
 
     <style name="actionBarTheme.actionTextAppearance" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Menu">
