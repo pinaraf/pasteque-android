@@ -37,6 +37,9 @@ public abstract class PaymentProcessor {
 			else
 				// Atos is "generic"
 				return new AtosPaymentProcessor(parentActivity, listener, payment);
+		//} else if ("bnp_rmw".equals(payment.getMode().getCode())) {
+		} else if ("cheque".equals(payment.getMode().getCode())) {
+			return new RMWPaymentProcessor(parentActivity, listener, payment);
 		}
 		return null;
 	}
