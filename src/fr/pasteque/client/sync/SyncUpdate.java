@@ -17,21 +17,22 @@
 */
 package fr.pasteque.client.sync;
 
-import android.content.Context;
-import android.os.Message;
-import android.os.Handler;
-import android.util.Log;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.io.IOException;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
 import fr.pasteque.client.Configure;
 import fr.pasteque.client.R;
 import fr.pasteque.client.data.ImagesData;
@@ -43,11 +44,11 @@ import fr.pasteque.client.models.Category;
 import fr.pasteque.client.models.Composition;
 import fr.pasteque.client.models.Customer;
 import fr.pasteque.client.models.Floor;
-import fr.pasteque.client.models.User;
 import fr.pasteque.client.models.PaymentMode;
 import fr.pasteque.client.models.Product;
 import fr.pasteque.client.models.Stock;
 import fr.pasteque.client.models.TariffArea;
+import fr.pasteque.client.models.User;
 import fr.pasteque.client.utils.URLTextGetter;
 
 public class SyncUpdate {
@@ -573,6 +574,10 @@ public class SyncUpdate {
                 PaymentMode mode = PaymentMode.fromJSON(o);
                 modes.add(mode);
             }
+            //HACK : RMW support not done on server yet
+            PaymentMode rmwMode = new PaymentMode(424242, "RMW", "BNP", "BNP", 0, false, null, true, 1);
+            modes.add(rmwMode);
+            // HACK done.
             Collections.sort(modes, new Comparator<PaymentMode>() {
                         @Override
 						public int compare(PaymentMode o1, PaymentMode o2) {
